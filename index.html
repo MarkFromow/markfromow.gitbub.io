@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mark Fromow - Fashion Design Services</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      background-color: #fff;
+      font-family: 'Avenir Next Medium', sans-serif;
+      font-weight: 500;
+    }
+    #ticker-container { position: relative; width: 100%; height: 100%; }
+
+    .ticker-row {
+      position: absolute;
+      width: 100%;
+      overflow: hidden;
+      white-space: nowrap;
+      font-size: 10pt;
+      line-height: 30pt;
+    }
+    .ticker-content {
+      display: inline-block;
+      animation: scroll-left linear infinite;
+    }
+    .ticker-content span {
+      display: inline-block;
+      padding-right: 5ch;
+    }
+
+    .row1 .ticker-content { animation-duration: 80s; }
+    .row2 .ticker-content { animation-duration: 80s; }
+    .row3 .ticker-content { animation-duration: 100s; }
+
+    @keyframes scroll-left {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    @media (max-width: 480px) {
+      .ticker-row { font-size: 5vw; line-height: 25vw; }
+    }
+  </style>
+</head>
+<body>
+  <div id="ticker-container">
+    <div class="ticker-row row1" data-top="0">
+      <div class="ticker-content"><span>MARK FROMOW</span></div>
+    </div>
+    <div class="ticker-row row2" data-top="30">
+      <div class="ticker-content"><span>FASHION DESIGN SERVICES DE CRÉATION DE MODE</span></div>
+    </div>
+    <div class="ticker-row row3" data-top="60">
+      <div class="ticker-content"><span><a href="mailto:mark@markfromow.com" style="color: inherit; text-decoration: none;">MARK@MARKFROMOW.COM</a></span></div>
+    </div>
+  </div>
+  <script>
+    window.addEventListener('load', () => {
+      const container = document.getElementById('ticker-container');
+      const templates = Array.from(container.children);
+      // Horizontal fill and duplicate for smooth scroll
+      templates.forEach(row => {
+        const content = row.querySelector('.ticker-content');
+        const text = content.innerHTML;
+        let html = '';
+        while (content.offsetWidth < window.innerWidth * 2) {
+          html += text;
+          content.innerHTML = html;
+        }
+        content.innerHTML += html;
+        row.style.top = row.dataset.top + 'pt';
+      });
+      // Clone vertically
+      const rowHeightPt = 30; // updated line-height
+      const totalHeightPx = container.clientHeight;
+      const rowHeightPx = rowHeightPt * (96/72);
+      const rowsCount = 3;
+      const blockHeightPx = rowHeightPx * rowsCount;
+      const blocksNeeded = Math.ceil(totalHeightPx / blockHeightPx);
+      for (let i = 1; i < blocksNeeded; i++) {
+        templates.forEach(row => {
+          const clone = row.cloneNode(true);
+          const baseTop = parseFloat(row.dataset.top);
+          clone.style.top = (baseTop + i * rowHeightPt * rowsCount) + 'pt';
+          container.appendChild(clone);
+        });
+      }
+    });
+  </script>
+</body>
+</html>
+
