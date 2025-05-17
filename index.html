@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mark Fromow - Fashion Design Services</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      background-color: #fff;
+      font-family: 'Avenir Next Medium', sans-serif;
+      font-weight: 500;
+      position: relative;
+    }
+    #ticker-container { position: relative; width: 100%; height: 100%; }
+
+    .ticker-row {
+      position: absolute;
+      width: 100%;
+      overflow: hidden;
+      white-space: nowrap;
+      font-size: 10pt;
+      line-height: 30pt;
+    }
+    .ticker-content {
+      display: inline-block;
+      animation: scroll-left linear infinite;
+    }
+    .row1 .ticker-content span { padding-right: 20ch; }
+    .ticker-content span { padding-right: 3ch; }
+
+    .row2 { font-size: 14pt; font-family: 'Avenir Next', sans-serif; font-weight: 400; }
+    .row1 .ticker-content { animation-duration: 140s; }
+    .row2 .ticker-content { animation-duration: 70s; }
+
+    .polka-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
+    }
+    .polka-dot {
+      position: absolute; width: 170px; height: 170px; border-radius: 50%; background-color: yellow;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Courier', monospace; font-size: 8pt; color: #000; pointer-events: none;
+    }
+
+    @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    @media (max-width: 480px) { .ticker-row { font-size: 5vw; line-height: 25vw; } }
+  </style>
+</head>
+<body>
+  <div id="ticker-container">
+    <div class="ticker-row row1" data-top="0"><div class="ticker-content"><span>MARK FROMOW</span></div></div>
+    <div class="ticker-row row2" data-top="60"><div class="ticker-content"><span>FASHION DESIGN SERVICES • SERVICES DE CRÉATION DE MODE</span></div></div>
+  </div>
+  <script>
+    window.addEventListener('load', () => {
+      const container = document.getElementById('ticker-container');
+      const templates = Array.from(container.children);
+      templates.forEach(row => {
+        const content = row.querySelector('.ticker-content');
+        const text = content.innerHTML;
+        let html = text;
+        while (content.offsetWidth < window.innerWidth * 2) { html += text; content.innerHTML = html; }
+        content.innerHTML = html;
+        row.style.top = `${row.dataset.top}pt`;
+      });
+      const lineHeightPt = 30;
+      const offsets = templates.map(r => parseFloat(r.dataset.top));
+      const cycleHeightPt = offsets[offsets.length - 1] + lineHeightPt * 2;
+      const containerHeightPx = container.clientHeight;
+      const cycleHeightPx = cycleHeightPt * (96/72);
+      const cycles = Math.ceil(containerHeightPx / cycleHeightPx);
+      for (let i = 1; i <= cycles; i++) {
+        templates.forEach(row => {
+          const clone = row.cloneNode(true);
+          clone.style.top = `${parseFloat(row.dataset.top) + i * cycleHeightPt}pt`;
+          container.appendChild(clone);
+        });
+      }
+
+      let overlay;
+      document.body.addEventListener('click', () => {
+        if (overlay) { overlay.remove(); overlay = null; }
+        else {
+          overlay = document.createElement('div'); overlay.className = 'polka-overlay';
+          const spacing = 300; // px between dots
+          const dotSize = 170; // px
+          const cols = Math.ceil(window.innerWidth / spacing) + 1;
+          const rows = Math.ceil(window.innerHeight / spacing) + 1;
+          const totalWidth = (cols - 1) * spacing;
+          const totalHeight = (rows - 1) * spacing;
+          const offsetX = (window.innerWidth - totalWidth) / 2;
+          const offsetY = (window.innerHeight - totalHeight) / 2;
+          for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+              const dot = document.createElement('div'); dot.className = 'polka-dot';
+              const x = offsetX + c * spacing + ((r % 2) * spacing / 2);
+              const y = offsetY + r * spacing;
+              dot.style.left = `${x}px`; dot.style.top = `${y}px`;
+              dot.textContent = 'MARK@MARKFROMOW.com'; overlay.appendChild(dot);
+            }
+          }
+          document.body.appendChild(overlay);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
