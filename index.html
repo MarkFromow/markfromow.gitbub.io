@@ -106,8 +106,9 @@
       const container = document.getElementById('ticker-container');
       const vw = window.innerWidth;
 
-      const row1FontPx = Math.max(12, vw * 0.022);
-      const row2FontPx = Math.max(16, vw * 0.030);
+      // Font sizes: scale with viewport on mobile, cap for desktop
+      const row1FontPx = Math.min(Math.max(12, vw * 0.022), 16);
+      const row2FontPx = Math.min(Math.max(14, vw * 0.030), 20);
 
       const row1LinePx = row1FontPx * 2.0;
       const row2LinePx = row2FontPx * 2.0;
