@@ -9,98 +9,266 @@
     html, body { height: 100%; overflow: hidden; }
     body {
       background-color: #fff;
-      font-family: 'Avenir Next Medium', sans-serif;
+      font-family: 'Avenir Next Medium', 'Avenir Next', sans-serif;
       font-weight: 500;
       position: relative;
     }
-    #ticker-container { position: relative; width: 100%; height: 100%; }
+
+    #wip-link {
+      display: block;
+      z-index: 100;
+      font-family: 'Avenir Next', sans-serif;
+      font-weight: 400;
+      font-size: 20pt;
+      line-height: 1;
+      color: #0000EE;
+      text-decoration: none;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      pointer-events: auto;
+      text-align: center;
+    }
+    #wip-link:visited { color: #551A8B; }
+
+    #wip-container {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1;
+      gap: 0;
+    }
+
+    #instagram-label {
+      display: block;
+      font-family: 'Avenir Next', sans-serif;
+      font-weight: 400;
+      font-size: 5pt;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      line-height: 1;
+      margin-top: 2px;
+    }
+
+    #email-label {
+      position: fixed;
+      top: calc(50% + 10px);
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 100;
+      font-family: 'Avenir Next', sans-serif;
+      font-weight: 400;
+      font-size: 20pt;
+      line-height: 30pt;
+      color: #0000EE;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    #ticker-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+    }
 
     .ticker-row {
       position: absolute;
       width: 100%;
       overflow: hidden;
       white-space: nowrap;
-      font-size: 10pt;
-      line-height: 30pt;
     }
+
     .ticker-content {
       display: inline-block;
       animation: scroll-left linear infinite;
     }
-    .row1 .ticker-content span { padding-right: 20ch; }
-    .ticker-content span { padding-right: 3ch; }
 
-    .row2 { font-size: 14pt; font-family: 'Avenir Next', sans-serif; font-weight: 400; }
-    .row1 .ticker-content { animation-duration: 140s; }
-    .row2 .ticker-content { animation-duration: 70s; }
-
-    .polka-overlay {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
-    }
-    .polka-dot {
-      position: absolute; width: 170px; height: 170px; border-radius: 50%; background-color: yellow;
-      display: flex; align-items: center; justify-content: center;
-      font-family: 'Courier', monospace; font-size: 8pt; color: #000; pointer-events: none;
+    #checker-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 110;
+      pointer-events: none;
     }
 
-    @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-    @media (max-width: 480px) { .ticker-row { font-size: 5vw; line-height: 25vw; } }
+    @keyframes scroll-left {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
   </style>
 </head>
 <body>
-  <div id="ticker-container">
-    <div class="ticker-row row1" data-top="0"><div class="ticker-content"><span>MARK FROMOW</span></div></div>
-    <div class="ticker-row row2" data-top="60"><div class="ticker-content"><span>FASHION DESIGN SERVICES • SERVICES DE CRÉATION DE MODE</span></div></div>
+
+  <div id="wip-container">
+    <a id="wip-link" href="https://instagram.com/wip_pit" target="_blank" rel="noopener">WIP<span id="instagram-label">(INSTAGRAM)</span></a>
   </div>
+  <div id="email-label">EMAIL</div>
+  <div id="ticker-container"></div>
+  <canvas id="checker-overlay"></canvas>
+
   <script>
     window.addEventListener('load', () => {
       const container = document.getElementById('ticker-container');
-      const templates = Array.from(container.children);
-      templates.forEach(row => {
-        const content = row.querySelector('.ticker-content');
-        const text = content.innerHTML;
-        let html = text;
-        while (content.offsetWidth < window.innerWidth * 2) { html += text; content.innerHTML = html; }
-        content.innerHTML = html;
-        row.style.top = `${row.dataset.top}pt`;
-      });
-      const lineHeightPt = 30;
-      const offsets = templates.map(r => parseFloat(r.dataset.top));
-      const cycleHeightPt = offsets[offsets.length - 1] + lineHeightPt * 2;
-      const containerHeightPx = container.clientHeight;
-      const cycleHeightPx = cycleHeightPt * (96/72);
-      const cycles = Math.ceil(containerHeightPx / cycleHeightPx);
-      for (let i = 1; i <= cycles; i++) {
-        templates.forEach(row => {
-          const clone = row.cloneNode(true);
-          clone.style.top = `${parseFloat(row.dataset.top) + i * cycleHeightPt}pt`;
-          container.appendChild(clone);
+      const vw = window.innerWidth;
+
+      const row1FontPx = Math.max(12, vw * 0.022);
+      const row2FontPx = Math.max(16, vw * 0.030);
+
+      const row1LinePx = row1FontPx * 2.0;
+      const row2LinePx = row2FontPx * 2.0;
+
+      const innerGap = row2FontPx * 2.25;
+
+      const outerGap = row2LinePx * 3.0 - row2FontPx * 1.75;
+
+      const rowDefs = [
+        {
+          cls: 'row1',
+          text: 'MARK FROMOW',
+          fontPx: row1FontPx,
+          linePx: row1LinePx,
+          fontFamily: "'Avenir Next Medium', sans-serif",
+          fontWeight: '500',
+          wordGap: '20ch',
+          duration: 140,
+        },
+        {
+          cls: 'row2',
+          text: 'FASHION DESIGN SERVICES \u2022 SERVICES DE CR\u00C9ATION DE MODE',
+          fontPx: row2FontPx,
+          linePx: row2LinePx,
+          fontFamily: "'Avenir Next', sans-serif",
+          fontWeight: '400',
+          wordGap: '3ch',
+          duration: 105,
+        },
+      ];
+
+      rowDefs[0].topPx = 0;
+      rowDefs[1].topPx = row1LinePx + innerGap;
+      const cycleHeightPx = rowDefs[1].topPx + row2LinePx + outerGap;
+
+      function buildSet(yOffsetPx) {
+        rowDefs.forEach(def => {
+          const row = document.createElement('div');
+          row.className = `ticker-row ${def.cls}`;
+          row.style.cssText = `
+            top: ${def.topPx + yOffsetPx}px;
+            font-size: ${def.fontPx}px;
+            line-height: ${def.linePx}px;
+            font-family: ${def.fontFamily};
+            font-weight: ${def.fontWeight};
+          `;
+          const content = document.createElement('div');
+          content.className = 'ticker-content';
+          content.style.animationDuration = `${def.duration}s`;
+          const span = document.createElement('span');
+          span.style.paddingRight = def.wordGap;
+          span.textContent = def.text;
+          content.appendChild(span);
+          row.appendChild(content);
+          container.appendChild(row);
+          while (content.scrollWidth < vw * 2) {
+            const s = document.createElement('span');
+            s.style.paddingRight = def.wordGap;
+            s.textContent = def.text;
+            content.appendChild(s);
+          }
+          content.innerHTML += content.innerHTML;
         });
       }
 
-      let overlay;
-      document.body.addEventListener('click', () => {
-        if (overlay) { overlay.remove(); overlay = null; }
-        else {
-          overlay = document.createElement('div'); overlay.className = 'polka-overlay';
-          const spacing = 300; // px between dots
-          const dotSize = 170; // px
-          const cols = Math.ceil(window.innerWidth / spacing) + 1;
-          const rows = Math.ceil(window.innerHeight / spacing) + 1;
-          const totalWidth = (cols - 1) * spacing;
-          const totalHeight = (rows - 1) * spacing;
-          const offsetX = (window.innerWidth - totalWidth) / 2;
-          const offsetY = (window.innerHeight - totalHeight) / 2;
-          for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-              const dot = document.createElement('div'); dot.className = 'polka-dot';
-              const x = offsetX + c * spacing + ((r % 2) * spacing / 2);
-              const y = offsetY + r * spacing;
-              dot.style.left = `${x}px`; dot.style.top = `${y}px`;
-              dot.textContent = 'MARK@MARKFROMOW.com'; overlay.appendChild(dot);
-            }
+      // Position WIP link just below the top — nudged down slightly from original
+      document.getElementById('wip-container').style.top = `${row1LinePx * 0.6 + 10}px`;
+
+      const sets = Math.ceil(window.innerHeight / cycleHeightPx) + 1;
+      for (let i = 0; i < sets; i++) buildSet(i * cycleHeightPx);
+
+      // Edge-to-edge checkerboard via canvas
+      const canvas = document.getElementById('checker-overlay');
+      const ctx = canvas.getContext('2d');
+      const SQ = 170;
+      let checkerVisible = false;
+      let emailSquare = null;
+
+      function drawChecker() {
+        const W = window.innerWidth;
+        const H = window.innerHeight;
+        canvas.width  = W;
+        canvas.height = H;
+
+        ctx.clearRect(0, 0, W, H);
+
+        const cols = Math.ceil(W / SQ) + 1;
+        const rows = Math.ceil(H / SQ) + 1;
+
+        // Pick a square near the centre for the email link
+        const linkCol = Math.floor(cols / 2) % 2 === 0 ? Math.floor(cols / 2) : Math.floor(cols / 2) + 1;
+        const linkRow = Math.floor(rows / 2) % 2 === 0 ? Math.floor(rows / 2) : Math.floor(rows / 2) + 1;
+        // Ensure it falls on a black square position
+        const adjLinkCol = (linkRow + linkCol) % 2 === 0 ? linkCol : linkCol + 1;
+
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            if ((r + c) % 2 !== 0) continue;
+            // Skip the email square — it will be an <a> element instead
+            if (r === linkRow && c === adjLinkCol) continue;
+            const x = c * SQ;
+            const y = r * SQ;
+            ctx.fillStyle = '#000';
+            ctx.fillRect(x, y, SQ, SQ);
+            ctx.fillStyle = '#fff';
+            ctx.font = '8pt Courier, monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('MARK@MARKFROMOW.com', x + SQ / 2, y + SQ / 2);
           }
-          document.body.appendChild(overlay);
+        }
+
+        // Create the blue email hyperlink square
+        emailSquare = document.createElement('a');
+        emailSquare.href = 'mailto:MARK@MARKFROMOW.COM';
+        emailSquare.style.cssText = `
+          position: fixed;
+          left: ${adjLinkCol * SQ}px;
+          top: ${linkRow * SQ}px;
+          width: ${SQ}px;
+          height: ${SQ}px;
+          background: #0000EE;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: Courier, monospace;
+          font-size: 8pt;
+          color: #fff;
+          text-align: center;
+          text-decoration: none;
+          z-index: 120;
+          box-sizing: border-box;
+          padding: 8px;
+          line-height: 1.3;
+          word-break: break-all;
+        `;
+        emailSquare.textContent = 'MARK@MARKFROMOW.COM';
+        document.body.appendChild(emailSquare);
+      }
+
+      document.body.addEventListener('click', (e) => {
+        if (e.target.closest('#wip-link')) return;
+        if (e.target.closest('a[href^="mailto"]')) return;
+        checkerVisible = !checkerVisible;
+        if (checkerVisible) {
+          drawChecker();
+          canvas.style.display = 'block';
+        } else {
+          canvas.style.display = 'none';
+          if (emailSquare) { emailSquare.remove(); emailSquare = null; }
         }
       });
     });
