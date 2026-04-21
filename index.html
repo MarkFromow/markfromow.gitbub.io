@@ -55,7 +55,6 @@
 
     #email-label {
       position: fixed;
-      top: calc(50% + 10px);
       left: 50%;
       transform: translate(-50%, -50%);
       z-index: 100;
@@ -88,15 +87,6 @@
       animation: scroll-left linear infinite;
     }
 
-    #checker-overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: 110;
-      pointer-events: none;
-    }
-
     @keyframes scroll-left {
       0%   { transform: translateX(0); }
       100% { transform: translateX(-50%); }
@@ -108,9 +98,8 @@
   <div id="wip-container">
     <a id="wip-link" href="https://instagram.com/wip_pit" target="_blank" rel="noopener">WIP<span id="instagram-label">(INSTAGRAM)</span></a>
   </div>
-  <div id="email-label">EMAIL</div>
+  <div id="email-label">CONTACT</div>
   <div id="ticker-container"></div>
-  <canvas id="checker-overlay"></canvas>
 
   <script>
     window.addEventListener('load', () => {
@@ -184,90 +173,67 @@
         });
       }
 
-      // Position WIP link just below the top — nudged down slightly from original
-      document.getElementById('wip-container').style.top = `${row1LinePx * 0.6 + 10}px`;
+      // WIP: nudge further down on mobile (smaller screens need more offset)
+      const wipNudge = vw < 600 ? row1LinePx * 1.2 : row1LinePx * 0.6 + 10;
+      document.getElementById('wip-container').style.top = `${wipNudge}px`;
+
+      // EMAIL: centre of the outerGap in the second visible cycle
+      const emailTop = cycleHeightPx + rowDefs[1].topPx + row2LinePx + outerGap / 2;
+      document.getElementById('email-label').style.top = `${emailTop}px`;
 
       const sets = Math.ceil(window.innerHeight / cycleHeightPx) + 1;
       for (let i = 0; i < sets; i++) buildSet(i * cycleHeightPx);
 
-      // Edge-to-edge checkerboard via canvas
-      const canvas = document.getElementById('checker-overlay');
-      const ctx = canvas.getContext('2d');
-      const SQ = 170;
-      let checkerVisible = false;
+      // Single centred email square
+      const SQ = vw < 600 ? Math.round(170 * 0.67 * 1.75) : Math.round(170 * 1.75);
+      const sqFontPt = vw < 600 ? '9.5pt' : '14pt';
+      let overlayVisible = false;
       let emailSquare = null;
 
-      function drawChecker() {
+      function showEmailSquare() {
         const W = window.innerWidth;
         const H = window.innerHeight;
-        canvas.width  = W;
-        canvas.height = H;
 
-        ctx.clearRect(0, 0, W, H);
-
-        const cols = Math.ceil(W / SQ) + 1;
-        const rows = Math.ceil(H / SQ) + 1;
-
-        // Pick a square near the centre for the email link
-        const linkCol = Math.floor(cols / 2) % 2 === 0 ? Math.floor(cols / 2) : Math.floor(cols / 2) + 1;
-        const linkRow = Math.floor(rows / 2) % 2 === 0 ? Math.floor(rows / 2) : Math.floor(rows / 2) + 1;
-        // Ensure it falls on a black square position
-        const adjLinkCol = (linkRow + linkCol) % 2 === 0 ? linkCol : linkCol + 1;
-
-        for (let r = 0; r < rows; r++) {
-          for (let c = 0; c < cols; c++) {
-            if ((r + c) % 2 !== 0) continue;
-            // Skip the email square — it will be an <a> element instead
-            if (r === linkRow && c === adjLinkCol) continue;
-            const x = c * SQ;
-            const y = r * SQ;
-            ctx.fillStyle = '#000';
-            ctx.fillRect(x, y, SQ, SQ);
-            ctx.fillStyle = '#fff';
-            ctx.font = '8pt Courier, monospace';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('MARK@MARKFROMOW.com', x + SQ / 2, y + SQ / 2);
-          }
-        }
-
-        // Create the blue email hyperlink square
-        emailSquare = document.createElement('a');
-        emailSquare.href = 'mailto:MARK@MARKFROMOW.COM';
+        emailSquare = document.createElement('div');
         emailSquare.style.cssText = `
           position: fixed;
-          left: ${adjLinkCol * SQ}px;
-          top: ${linkRow * SQ}px;
+          left: ${(W - SQ) / 2}px;
+          top: ${(H - SQ) / 2}px;
           width: ${SQ}px;
           height: ${SQ}px;
-          background: #0000EE;
+          background: #fff;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-family: Courier, monospace;
-          font-size: 8pt;
-          color: #fff;
-          text-align: center;
-          text-decoration: none;
           z-index: 120;
           box-sizing: border-box;
           padding: 8px;
+        `;
+
+        const link = document.createElement('a');
+        link.href = 'mailto:MARK@MARKFROMOW.COM';
+        link.style.cssText = `
+          font-family: 'Avenir Next', sans-serif;
+          font-size: ${sqFontPt};
+          color: #0000EE;
+          text-align: center;
+          text-decoration: none;
           line-height: 1.3;
           word-break: break-all;
+          cursor: pointer;
         `;
-        emailSquare.textContent = 'MARK@MARKFROMOW.COM';
+        link.textContent = 'MARK@MARKFROMOW.COM';
+        emailSquare.appendChild(link);
         document.body.appendChild(emailSquare);
       }
 
       document.body.addEventListener('click', (e) => {
         if (e.target.closest('#wip-link')) return;
         if (e.target.closest('a[href^="mailto"]')) return;
-        checkerVisible = !checkerVisible;
-        if (checkerVisible) {
-          drawChecker();
-          canvas.style.display = 'block';
+        overlayVisible = !overlayVisible;
+        if (overlayVisible) {
+          showEmailSquare();
         } else {
-          canvas.style.display = 'none';
           if (emailSquare) { emailSquare.remove(); emailSquare = null; }
         }
       });
