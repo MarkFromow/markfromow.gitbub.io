@@ -16,7 +16,6 @@
 
     #wip-link {
       display: block;
-      z-index: 100;
       font-family: 'Avenir Next', sans-serif;
       font-weight: 400;
       font-size: 20pt;
@@ -28,7 +27,7 @@
       pointer-events: auto;
       text-align: center;
     }
-    #wip-link:visited { color: #551A8B; }
+    #wip-link:visited { color: #0000EE; }
 
     #wip-container {
       position: fixed;
@@ -38,7 +37,6 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      line-height: 1;
       gap: 0;
     }
 
@@ -53,7 +51,7 @@
       margin-top: 2px;
     }
 
-    #email-label {
+    #contact-label {
       position: fixed;
       left: 50%;
       transform: translate(-50%, -50%);
@@ -61,7 +59,7 @@
       font-family: 'Avenir Next', sans-serif;
       font-weight: 400;
       font-size: 20pt;
-      line-height: 30pt;
+      line-height: 1;
       color: #0000EE;
       letter-spacing: 0.05em;
       white-space: nowrap;
@@ -95,27 +93,34 @@
 </head>
 <body>
 
+  <div id="contact-label">CONTACT</div>
   <div id="wip-container">
     <a id="wip-link" href="https://instagram.com/wip_pit" target="_blank" rel="noopener">WIP<span id="instagram-label">(INSTAGRAM)</span></a>
   </div>
-  <div id="email-label">CONTACT</div>
   <div id="ticker-container"></div>
 
   <script>
     window.addEventListener('load', () => {
       const container = document.getElementById('ticker-container');
       const vw = window.innerWidth;
+      const vh = window.innerHeight;
 
-      // Font sizes: scale with viewport on mobile, cap for desktop
+      // Font sizes: fluid on mobile, capped on desktop
       const row1FontPx = Math.min(Math.max(12, vw * 0.022), 16);
       const row2FontPx = Math.min(Math.max(14, vw * 0.030), 20);
 
       const row1LinePx = row1FontPx * 2.0;
       const row2LinePx = row2FontPx * 2.0;
 
-      const innerGap = row2FontPx * 2.25;
+      const innerGap  = row2FontPx * 2.25;
+      const outerGap  = row2LinePx * 3.0 - row2FontPx * 1.75;
 
-      const outerGap = row2LinePx * 3.0 - row2FontPx * 1.75;
+      // Top positions of each row within the single set
+      const row1Top = 0;
+      const row2Top = row1LinePx + innerGap;
+
+      // Full cycle height (used to calculate where the 4th set would start)
+      const cycleHeightPx = row2Top + row2LinePx + outerGap;
 
       const rowDefs = [
         {
@@ -123,6 +128,7 @@
           text: 'MARK FROMOW',
           fontPx: row1FontPx,
           linePx: row1LinePx,
+          topPx: row1Top,
           fontFamily: "'Avenir Next Medium', sans-serif",
           fontWeight: '500',
           wordGap: '20ch',
@@ -133,6 +139,7 @@
           text: 'FASHION DESIGN SERVICES \u2022 SERVICES DE CR\u00C9ATION DE MODE',
           fontPx: row2FontPx,
           linePx: row2LinePx,
+          topPx: row2Top,
           fontFamily: "'Avenir Next', sans-serif",
           fontWeight: '400',
           wordGap: '3ch',
@@ -140,16 +147,27 @@
         },
       ];
 
-      rowDefs[0].topPx = 0;
-      rowDefs[1].topPx = row1LinePx + innerGap;
-      const cycleHeightPx = rowDefs[1].topPx + row2LinePx + outerGap;
+      // ── Layout: divide viewport into 3 ticker sets + 2 gaps ─────────────
+      // Each ticker pair height = row1LinePx + innerGap + row2LinePx
+      const pairH = row1LinePx + innerGap + row2LinePx;
 
-      function buildSet(yOffsetPx) {
+      // Total available height split: 3 pairs + 2 gaps
+      // We want gaps to be equal and generous — solve for gapH:
+      // 3 * pairH + 2 * gapH = vh  →  gapH = (vh - 3 * pairH) / 2
+      const gapH = Math.max(pairH * 0.8, (vh - 3 * pairH) / 2);
+
+      // Vertical start positions of each set
+      const set1Top = 0;
+      const set2Top = pairH + gapH;
+      const set3Top = pairH * 2 + gapH * 2;
+
+      // Build a ticker set at a given vertical offset
+      function buildSet(yOffset) {
         rowDefs.forEach(def => {
           const row = document.createElement('div');
           row.className = `ticker-row ${def.cls}`;
           row.style.cssText = `
-            top: ${def.topPx + yOffsetPx}px;
+            top: ${def.topPx + yOffset}px;
             font-size: ${def.fontPx}px;
             line-height: ${def.linePx}px;
             font-family: ${def.fontFamily};
@@ -174,32 +192,30 @@
         });
       }
 
-      // WIP: nudge further down on mobile (smaller screens need more offset)
-      const wipNudge = vw < 600 ? row1LinePx * 1.2 : row1LinePx * 0.6 + 10;
-      document.getElementById('wip-container').style.top = `${wipNudge}px`;
+      buildSet(set1Top);
+      buildSet(set2Top);
+      buildSet(set3Top);
 
-      // EMAIL: centre of the outerGap in the second visible cycle
-      const emailTop = cycleHeightPx + rowDefs[1].topPx + row2LinePx + outerGap / 2;
-      document.getElementById('email-label').style.top = `${emailTop}px`;
+      // CONTACT: vertically centred in gap 1
+      const contactTop = pairH + gapH / 2;
+      document.getElementById('contact-label').style.top = `${contactTop}px`;
 
-      const sets = Math.ceil(window.innerHeight / cycleHeightPx) + 1;
-      for (let i = 0; i < sets; i++) buildSet(i * cycleHeightPx);
+      // WIP: vertically centred in gap 2
+      const wipTop = pairH * 2 + gapH + gapH / 2;
+      document.getElementById('wip-container').style.top = `${wipTop}px`;
 
-      // Single centred email square
+      // ── Contact pop-up square ──────────────────────────────────────────
       const SQ = vw < 600 ? Math.round(170 * 0.67 * 1.75) : Math.round(170 * 1.75);
       const sqFontPt = vw < 600 ? '9.5pt' : '14pt';
       let overlayVisible = false;
       let emailSquare = null;
 
       function showEmailSquare() {
-        const W = window.innerWidth;
-        const H = window.innerHeight;
-
         emailSquare = document.createElement('div');
         emailSquare.style.cssText = `
           position: fixed;
-          left: ${(W - SQ) / 2}px;
-          top: ${(H - SQ) / 2}px;
+          left: ${(vw - SQ) / 2}px;
+          top: ${(vh - SQ) / 2}px;
           width: ${SQ}px;
           height: ${SQ}px;
           background: #fff;
@@ -210,7 +226,6 @@
           box-sizing: border-box;
           padding: 8px;
         `;
-
         const link = document.createElement('a');
         link.href = 'mailto:MARK@MARKFROMOW.COM';
         link.style.cssText = `
@@ -229,7 +244,7 @@
       }
 
       document.body.addEventListener('click', (e) => {
-        if (e.target.closest('#wip-link')) return;
+        if (e.target.closest('#wip-container')) return;
         if (e.target.closest('a[href^="mailto"]')) return;
         overlayVisible = !overlayVisible;
         if (overlayVisible) {
